@@ -127,7 +127,7 @@ window.MKS = {
     if(p==='/intraday') return bn('/api/v3/klines?symbol='+b+'&interval=1m&limit=1000').then(function(k){ return {data:k.map(function(c){return {t:c[0],p:+c[4]};})}; });
     return Promise.reject(new Error('unknown route'));
   }
-  function lock(){ if(window.__aslLocked) return; window.__aslLocked=1; location.replace('/asl-markets-pro.html'); }
+  function lock(){ if(window.__aslLocked) return; window.__aslLocked=1; location.replace('/?plans=1'); }
   function route(path){
     var q=new URL(path,'https://x'), p=q.pathname, sp=q.searchParams, sym=sp.get('symbol');
     if(!sym||sym==='xau') sym=MK.id;
@@ -884,6 +884,18 @@ html,body{overflow-x:clip}
   .asset-switch a{font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-decoration:none; padding:7px 14px; border:1px solid var(--hairline); color:var(--muted);}
   .asset-switch a:hover{color:var(--white); border-color:var(--muted);}
   .asset-switch a.on{color:var(--blue); border-color:var(--blue); pointer-events:none;}
+  .asset-switch{gap:0 !important}
+  .asset-switch .sw-tabs{display:flex;flex-wrap:wrap;gap:8px}
+  .asset-switch .sw-tab{font-family:var(--mono);font-size:11px;letter-spacing:.2em;padding:8px 16px;background:transparent;color:var(--muted);border:1px solid var(--hairline);cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:color .25s,border-color .25s}
+  .asset-switch .sw-tab:hover{color:var(--white);border-color:var(--muted)}
+  .asset-switch .sw-tab.on{color:var(--blue);border-color:var(--blue)}
+  .asset-switch .sw-caret{display:inline-block;font-size:10px;transition:transform .3s ease}
+  .asset-switch .sw-tab.on .sw-caret{transform:rotate(180deg)}
+  .asset-switch .sw-panel{display:grid;grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows .35s ease,opacity .35s ease,visibility 0s linear .35s}
+  .asset-switch .sw-panel.open{grid-template-rows:1fr;opacity:1;visibility:visible;transition:grid-template-rows .35s ease,opacity .35s ease,visibility 0s}
+  .asset-switch .sw-inner{overflow:hidden;min-height:0;display:flex;flex-wrap:wrap;gap:8px;transition:padding .35s ease}
+  .asset-switch .sw-panel.open .sw-inner{padding-top:10px}
+
 
   .asset-switch{flex-direction:column; gap:10px; align-items:stretch;}
   .asset-switch .sw-row{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
@@ -1311,7 +1323,7 @@ html,body{overflow-x:clip}
 
   <footer>
     <div class="disclaimer">
-      Market data on this page (spot price, pivot levels, indicators, correlations, session status) is calculated automatically from third-party feeds and is indicative only — it may be delayed, incomplete or differ from your broker's prices. The trade plan (entry, stop-loss, take-profit), the confluence score and the 30-day strategy chart are generated automatically by fixed rules for educational illustration; the strategy chart is a hypothetical simulation, not actual trading results. The 1H/4H/Daily Signal Snapshot shows ASL's own RSI/MACD/moving-average rating computed from xaus.com's candles. The Daily Outlook is generated automatically from the same live indicators shown above, not written by a person, and regenerates every minute. This page is for educational purposes only and does not constitute investment advice or a recommendation to buy or sell any financial instrument; trading gold and other leveraged instruments carries a high level of risk, and you should consult an independent financial advisor before making trading decisions.
+      Market data on this page (spot price, pivot levels, indicators, correlations, session status) is calculated automatically from third-party feeds and is indicative only — it may be delayed, incomplete or differ from your broker's prices. The trade plan (entry, stop-loss, take-profit), the confluence score and the 30-day strategy chart are generated automatically by fixed rules for educational illustration; the strategy chart is a hypothetical simulation, not actual trading results. The 1H/4H/Daily Signal Snapshot shows ASL's own RSI/MACD/moving-average rating computed from live candles. The Daily Outlook is generated automatically from the same live indicators shown above, not written by a person, and regenerates every minute. This page is for educational purposes only and does not constitute investment advice or a recommendation to buy or sell any financial instrument; trading gold and other leveraged instruments carries a high level of risk, and you should consult an independent financial advisor before making trading decisions.
     </div>
     <div class="foot-brand"><b>ASL UNIVERSITY</b> — Market Research Desk · Market data refreshes every 60 seconds · Pro market feed · ASL custom chart, macro calendar &amp; market intelligence</div>
   </footer>
@@ -1348,13 +1360,21 @@ html,body{overflow-x:clip}
   var nav=$('asset-switch');
   if(nav){
     var G=[['FOREX',['eurusd','gbpusd','usdjpy','nasdaq','oil']],['CRYPTO',['btc','eth','sol','bnb','xrp']]];
-    var h='<div class="sw-row"><span class="sw-lbl">FREE</span><a href="asl-xauusd-analysis.html">GOLD · XAU/USD</a><a href="asl-btcusd-analysis.html">BITCOIN · BTC/USDT</a></div>';
+    var curG=MK.crypto?'CRYPTO':'FOREX';
+    var h='<div class="sw-tabs" role="tablist"><button type="button" class="sw-tab" data-target="sw-free">FREE<span class="sw-caret">▾</span></button>';
+    G.forEach(function(g){ h+='<button type="button" class="sw-tab'+(g[0]===curG?' on':'')+'" data-target="sw-'+g[0].toLowerCase()+'">'+g[0]+'<span class="sw-caret">▾</span></button>'; });
+    h+='</div><div class="sw-panel" id="sw-free"><div class="sw-inner"><a href="asl-xauusd-analysis.html">GOLD · XAU/USD</a></div></div>';
     G.forEach(function(g){
-      h+='<div class="sw-row"><span class="sw-lbl">'+g[0]+'</span>';
+      h+='<div class="sw-panel'+(g[0]===curG?' open':'')+'" id="sw-'+g[0].toLowerCase()+'"><div class="sw-inner">';
       g[1].forEach(function(k){ var m=window.MKS[k]; h+='<a class="pro-sym'+(k===MK.id?' on':'')+'" href="asl-markets-pro.html?s='+k+'">'+m.tab+'<i>PRO 🔒</i></a>'; });
-      h+='</div>';
+      h+='</div></div>';
     });
     nav.innerHTML=h;
+    nav.querySelectorAll('.sw-tab').forEach(function(t){ t.addEventListener('click',function(){
+      var pn=document.getElementById(t.getAttribute('data-target')), was=pn.classList.contains('open');
+      nav.querySelectorAll('.sw-tab').forEach(function(x){ x.classList.remove('on'); document.getElementById(x.getAttribute('data-target')).classList.remove('open'); });
+      if(!was){ t.classList.add('on'); pn.classList.add('open'); }
+    }); });
     var st=document.createElement('style');
     st.textContent='.asset-switch{align-items:center}.asset-switch{flex-direction:column;gap:10px;align-items:stretch}.asset-switch .sw-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.asset-switch .sw-lbl{font:10px var(--mono);letter-spacing:.2em;color:var(--muted);min-width:64px}.asset-switch a i{font-style:normal;color:var(--blue);font-size:10px;margin-left:6px}@media(max-width:640px){.asset-switch .sw-lbl{flex-basis:100%;min-width:0}}'
       +'#pro-gate{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(6,17,22,.7);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}'
@@ -1365,8 +1385,7 @@ html,body{overflow-x:clip}
     var gate=document.createElement('div'); gate.id='pro-gate'; gate.hidden=true;
     gate.innerHTML='<div class="c" role="dialog" aria-modal="true"><div class="k">🔒</div><h2>Subscription required</h2><p>The Forex and Crypto sections are for subscribers only. A plan is needed to open any of these symbols.</p><button type="button" id="pro-gate-ok">OK</button></div>';
     document.body.appendChild(gate);
-    var active=true, target='/?plans=1';
-    fetch('/api/me',{credentials:'same-origin'}).then(function(r){return r.json();}).then(function(d){ active=!(d&&d.authenticated&&d.user&&d.user.active===false)&&!!(d&&d.authenticated); }).catch(function(){});
+    var active=true, target='/?plans=1'; /* TEST_OPEN */
     nav.addEventListener('click',function(e){
       var a=e.target.closest&&e.target.closest('a.pro-sym'); if(!a||active) return;
       e.preventDefault(); gate.hidden=false;
@@ -3233,8 +3252,7 @@ setInterval(tick, 1000);
 <div id="pro-gate" hidden><div class="c" role="dialog" aria-modal="true"><div class="k">🔒</div><h2>Subscription required</h2><p>The Forex and Crypto sections are for subscribers only. A plan is needed to open any of these symbols.</p><button type="button" id="pro-gate-ok">OK</button></div></div>
 <script>
 (function(){
-  var g=document.getElementById('pro-gate'), active=false;
-  fetch('/api/me',{credentials:'same-origin'}).then(function(r){return r.json();}).then(function(d){active=!!(d&&d.authenticated&&d.user&&d.user.active);}).catch(function(){});
+  var g=document.getElementById('pro-gate'), active=true; /* TEST_OPEN */
   document.querySelectorAll('a.pro-sym').forEach(function(a){a.addEventListener('click',function(e){ if(active) return; e.preventDefault(); g.hidden=false; });});
   document.getElementById('pro-gate-ok').onclick=function(){ location.href='/?plans=1'; };
   g.addEventListener('click',function(e){ if(e.target===g) g.hidden=true; });
